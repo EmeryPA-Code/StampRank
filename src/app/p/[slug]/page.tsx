@@ -2,8 +2,11 @@
 
 import React, { useState } from 'react'
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import { useWallet } from '@solana/wallet-adapter-react'
 import { TrendingUp, TrendingDown, ArrowLeft, Users, Activity, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import { stakeOnChain } from '@/lib/solana'
+import { supabase } from '@/lib/supabase'
 
 const PROJECTS: Record<string, {
   name: string
@@ -69,6 +72,26 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   const [stakeAmount, setStakeAmount] = useState(100)
   const [position, setPosition] = useState<'long' | 'skeptic' | null>(null)
   const isPositive = project?.change > 0
+  const { publicKey, sendTransaction, connected } = useWallet()
+
+  async function handleStake() {
+    if (!connected || !publicKey) {
+      alert('Please connect your wallet first')
+      return
+    }
+    if (!position) return
+
+    const signature = await stakeOnChain(publicKey, slug, stakeAmount, position, sendTransaction)
+
+    await supabase.from('stakes').insert({
+      wallet: publicKey.toBase58(),
+      project_slug: slug,
+      amount: stakeAmount,
+      type: position,
+    })
+
+    alert('Stake confirmed! Transaction: ' + signature)
+  }
 
   if (!project) {
     return (
@@ -253,9 +276,11 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
             </div>
 
             {position && (
-              <button className="w-full py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
+              <button
+                onClick={handleStake}
+                className="w-full py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
                 style={{ background: 'var(--primary)', color: '#fff' }}>
-                Connect Wallet to Stake
+                {connected ? 'Stake $THESIS' : 'Connect Wallet to Stake'}
               </button>
             )}
 
