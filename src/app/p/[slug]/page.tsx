@@ -72,7 +72,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
   const [stakeAmount, setStakeAmount] = useState(100)
   const [position, setPosition] = useState<'long' | 'skeptic' | null>(null)
   const isPositive = project?.change > 0
-  const { publicKey, sendTransaction, connected } = useWallet()
+  const { publicKey, signTransaction, connected } = useWallet()
 
   async function handleStake() {
     if (!connected || !publicKey) {
@@ -81,7 +81,7 @@ export default function ProjectPage({ params }: { params: Promise<{ slug: string
     }
     if (!position) return
 
-    const signature = await stakeOnChain(publicKey, slug, stakeAmount, position, sendTransaction)
+    const signature = await stakeOnChain(publicKey, slug, stakeAmount, position, signTransaction!)
 
     await supabase.from('stakes').insert({
       wallet: publicKey.toBase58(),

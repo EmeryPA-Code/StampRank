@@ -3,40 +3,44 @@ import {
   PublicKey,
   Transaction,
   SystemProgram,
-  TransactionInstruction,
   clusterApiUrl,
 } from '@solana/web3.js';
 
-const TREASURY_ADDRESS = new PublicKey('BPFLoaderUpgradeab1e11111111111111111111111');
-// SPL Memo v2 program ID
-const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
+const TREASURY_ADDRESS = new PublicKey('GsbwXfJraMomNxBcpR3DBDuFMEJyMSHjgcrLDSbDXQFj');
 
 export async function stakeOnChain(
   walletPublicKey: PublicKey,
   projectSlug: string,
   amount: number,
   type: 'long' | 'skeptic',
-  sendTransaction: (tx: Transaction, connection: Connection) => Promise<string>,
+  signTransaction: (tx: Transaction) => Promise<Transaction>,
 ): Promise<string> {
-  const connection = new Connection(clusterApiUrl('devnet'), 'confirmed');
+  const connection = new Connection(clusterApiUrl('testnet'), 'confirmed');
+  console.log('Connection endpoint:', connection.rpcEndpoint)
 
-  const memoText = `STAMPRANK:${type.toUpperCase()}:${projectSlug}:${amount}`;
+  try {
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
 
-  const transaction = new Transaction().add(
-    SystemProgram.transfer({
-      fromPubkey: walletPublicKey,
-      toPubkey: TREASURY_ADDRESS,
-      lamports: amount * 1000,
-    }),
-    new TransactionInstruction({
-      programId: MEMO_PROGRAM_ID,
-      keys: [],
-      data: Buffer.from(memoText, 'utf-8'),
-    }),
-  );
+    const transaction = new Transaction().add(
+      SystemProgram.transfer({
+        fromPubkey: walletPublicKey,
+        toPubkey: TREASURY_ADDRESS,
+        lamports: amount * 1000,
+      }),
+    );
+    transaction.recentBlockhash = blockhash;
+    transaction.feePayer = walletPublicKey;
 
-  const signature = await sendTransaction(transaction, connection);
-  await connection.confirmTransaction(signature, 'confirmed');
+    console.log('Sending transaction...')
+    const signed = await signTransaction(transaction);
+    const signature = await connection.sendRawTransaction(signed.serialize());
+    console.log('Transaction sent:' + signature)
 
-  return signature;
+    await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
+
+    return signature;
+  } catch (error) {
+    console.error('Full error:', JSON.stringify(error, null, 2))
+    throw error;
+  }
 }

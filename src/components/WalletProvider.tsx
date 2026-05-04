@@ -12,7 +12,7 @@ interface Props {
 }
 
 export const SolanaWalletProvider: FC<Props> = ({ children }) => {
-  const endpoint = useMemo(() => clusterApiUrl('devnet'), [])
+  const endpoint = useMemo(() => clusterApiUrl('testnet'), [])
   const wallets = useMemo(() => [new PhantomWalletAdapter()], [])
 
   return (
