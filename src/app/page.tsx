@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, Zap, Activity } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui'
+import dynamic from 'next/dynamic'
+const WalletMultiButton = dynamic(
+  () => import('@solana/wallet-adapter-react-ui').then(m => m.WalletMultiButton),
+  { ssr: false }
+)
 import { supabase } from '@/lib/supabase'
 
 type Project = {
