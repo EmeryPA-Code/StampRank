@@ -222,7 +222,7 @@ export default function Home() {
             style={{ background: 'var(--primary)', color: '#fff' }}>
             Submit Your Project
           </Link>
-          <a href="#leaderboard"
+          <a href="#how-it-works"
             className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
             style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'transparent' }}>
             How it Works
@@ -240,6 +240,48 @@ export default function Home() {
               style={{ background: '#0d0d14', borderColor: 'var(--border)', minWidth: '160px' }}>
               <p className="mono font-bold text-2xl mb-1" style={{ color: 'var(--secondary)' }}>{s.value}</p>
               <p className="text-xs" style={{ color: 'var(--muted)' }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How it Works */}
+      <section id="how-it-works" className="px-6 py-16 border-b"
+        style={{ borderColor: 'var(--border)' }}>
+        <h2 className="text-2xl font-bold text-center mb-10" style={{ color: 'var(--text)' }}>
+          How it Works
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {[
+            {
+              step: '01',
+              icon: '🔗',
+              title: 'Connect Your Wallet',
+              desc: 'Connect your Phantom wallet to StampRank. You start with 1,000 $THESIS tokens to stake.',
+            },
+            {
+              step: '02',
+              icon: '📊',
+              title: 'Stake Your Thesis',
+              desc: 'Browse founder projects and stake $THESIS to Long (you believe in it) or Skeptic (you think it\'s overhyped). Your stake is recorded on Solana.',
+            },
+            {
+              step: '03',
+              icon: '🏆',
+              title: 'Rankings Are Earned',
+              desc: 'Market Cap = total $THESIS staked. The community decides who\'s real. No votes, no algorithms — just skin in the game.',
+            },
+          ].map(({ step, icon, title, desc }) => (
+            <div key={step} className="rounded-lg border p-6 flex flex-col gap-3"
+              style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}>
+              <div className="flex items-center justify-between">
+                <span className="text-3xl">{icon}</span>
+                <span className="mono text-xs font-bold" style={{ color: 'var(--primary)' }}>
+                  STEP {step}
+                </span>
+              </div>
+              <h3 className="font-bold text-base" style={{ color: 'var(--text)' }}>{title}</h3>
+              <p className="text-sm leading-relaxed" style={{ color: 'var(--muted)' }}>{desc}</p>
             </div>
           ))}
         </div>
