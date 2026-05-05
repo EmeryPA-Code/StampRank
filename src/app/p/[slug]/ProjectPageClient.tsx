@@ -90,13 +90,14 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
       return
     }
     if (!position) return
+    if (!project) return
 
     const signature = await stakeOnChain(publicKey, slug, stakeAmount, position, signTransaction!)
 
     alert('Stake confirmed! Transaction: ' + signature)
 
-    const newMarketCap = (project.market_cap ?? 0) + stakeAmount
-    const newStakers = (project.stakers ?? 0) + 1
+    const newMarketCap = (project?.market_cap ?? 0) + stakeAmount
+    const newStakers = (project?.stakers ?? 0) + 1
 
     supabase.from('stakes').insert({
       wallet: publicKey.toBase58(),
@@ -112,7 +113,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
     }).eq('slug', slug)
     console.log('Supabase update response:', updateResponse)
 
-    setProject({ ...project, market_cap: newMarketCap, stakers: newStakers })
+    setProject({ ...project!, market_cap: newMarketCap, stakers: newStakers })
   }
 
   const header = (
