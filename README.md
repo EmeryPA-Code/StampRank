@@ -1,36 +1,105 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# StampRank — On-Chain Reputation Markets for Founders
 
-## Getting Started
+> **The community decides who's real. The blockchain proves it.**
 
-First, run the development server:
+---
+
+## The Problem
+
+Founders want visibility and status. The community wants to judge which projects are real value vs pure hype. No platform combines both with skin in the game.
+
+Twitter clout is gameable. Product Hunt votes are bots. Follower counts are bought. There's no credible, manipulation-proof signal for founder reputation — until now.
+
+---
+
+## What is StampRank
+
+A SocialFi prediction market on Solana where users stake **$THESIS tokens** to **Long** or **Skeptic** real founder projects.
+
+Rankings are determined by staked capital, not votes. Every position is recorded on-chain — transparent, verifiable, manipulation-proof.
+
+---
+
+## How it Works
+
+1. **Connect** your Phantom wallet
+2. **Browse** the leaderboard of founder projects
+3. **Stake $THESIS** to Long (you believe in it) or Skeptic (you think it's overhyped)
+4. **Market Cap** = total $THESIS staked. That determines the ranking.
+5. **Submit your own project** and let the market decide its real value
+
+---
+
+## Why Solana
+
+- **Sub-second finality** makes staking feel instant
+- **Low fees** mean micro-stakes are viable
+- **Brings the entire Indie Hacker / Tech Twitter ecosystem onchain**
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15 + TypeScript + Tailwind CSS |
+| Database | Supabase (off-chain metadata + user data) |
+| Blockchain | Solana Testnet — $THESIS SPL token, on-chain stakes via wallet-adapter |
+| Auth | Phantom Wallet + @solana/wallet-adapter |
+| OG Images | Vercel Edge Functions (dynamic Bloomberg-style Hype Cards) |
+| Deploy | Vercel |
+
+---
+
+## Live Demo
+
+**[https://stamp-rank.vercel.app](https://stamp-rank.vercel.app)**
+
+---
+
+## Key Features
+
+- **Live leaderboard** ranked by on-chain Market Cap
+- **Long / Skeptic positions** recorded on Solana
+- **Dynamic OG images** — share your Hype Card on X
+- **Project submission** — any founder can list their project
+- **Bloomberg Terminal aesthetic** built for Tech Twitter
+
+---
+
+## Running Locally
+
+### 1. Clone and install
+
+```bash
+git clone https://github.com/your-repo/stamprank.git
+cd stamprank
+npm install
+```
+
+### 2. Set environment variables
+
+Create a `.env.local` file in the project root:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 3. Run the development server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 4. Connect wallet
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Install [Phantom](https://phantom.app) and switch to **Testnet** mode to interact with on-chain staking.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## Hackathon
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built for the **Solana Frontier Hackathon 2026** by [@EmeryPA](https://twitter.com/EmeryPA)
