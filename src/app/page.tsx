@@ -190,6 +190,61 @@ export default function Home() {
       {/* Ticker */}
       <Ticker />
 
+      {/* Hero */}
+      <section className="flex flex-col items-center text-center px-6 py-16 border-b"
+        style={{
+          background: 'linear-gradient(180deg, #0A0A0F 0%, #111118 100%)',
+          borderColor: 'var(--border)',
+        }}>
+
+        {/* Badge */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-6 mono"
+          style={{ background: '#1a0f2e', color: 'var(--primary)', border: '1px solid #3d1f6e' }}>
+          ⚡ Built on Solana
+        </div>
+
+        {/* Headline */}
+        <h1 className="font-bold mb-4 leading-tight"
+          style={{ color: '#ffffff', fontSize: '64px', lineHeight: 1.1, maxWidth: '800px' }}>
+          The Market Decides<br />Who&apos;s Real
+        </h1>
+
+        {/* Subheadline */}
+        <p className="text-base mb-8 max-w-xl leading-relaxed"
+          style={{ color: 'var(--muted)' }}>
+          Stake $THESIS to Long or Skeptic founder projects. Rankings determined by on-chain capital, not votes.
+        </p>
+
+        {/* CTAs */}
+        <div className="flex items-center gap-3 mb-12">
+          <Link href="/submit"
+            className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
+            style={{ background: 'var(--primary)', color: '#fff' }}>
+            Submit Your Project
+          </Link>
+          <a href="#leaderboard"
+            className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
+            style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'transparent' }}>
+            How it Works
+          </a>
+        </div>
+
+        {/* Stat cards */}
+        <div className="flex items-center gap-4">
+          {[
+            { label: 'Projects Listed', value: '8' },
+            { label: 'THESIS Staked', value: '$309,800' },
+            { label: 'Stakers', value: '4,590' },
+          ].map(s => (
+            <div key={s.label} className="px-6 py-4 rounded-lg border"
+              style={{ background: '#0d0d14', borderColor: 'var(--border)', minWidth: '160px' }}>
+              <p className="mono font-bold text-2xl mb-1" style={{ color: 'var(--secondary)' }}>{s.value}</p>
+              <p className="text-xs" style={{ color: 'var(--muted)' }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Stats bar */}
       <div className="border-b px-6 py-3 flex items-center gap-8"
         style={{ borderColor: 'var(--border)' }}>

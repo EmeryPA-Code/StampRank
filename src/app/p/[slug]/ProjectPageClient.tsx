@@ -105,10 +105,12 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
       type: position,
     })
 
-    supabase.from('projects').update({
+    console.log('Updating slug:', slug, 'new market_cap:', newMarketCap)
+    const updateResponse = await supabase.from('projects').update({
       market_cap: newMarketCap,
       stakers: newStakers,
     }).eq('slug', slug)
+    console.log('Supabase update response:', updateResponse)
 
     setProject({ ...project, market_cap: newMarketCap, stakers: newStakers })
   }
