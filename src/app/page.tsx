@@ -170,6 +170,11 @@ export default function Home() {
           </span>
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/submit"
+            className="text-sm font-bold transition-opacity hover:opacity-70"
+            style={{ color: 'var(--secondary)' }}>
+            Submit Project
+          </Link>
           <div className="flex items-center gap-1.5">
             <Activity size={12} style={{ color: 'var(--secondary)' }} />
             <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
