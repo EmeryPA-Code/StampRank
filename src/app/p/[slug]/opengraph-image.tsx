@@ -78,7 +78,7 @@ export default function Image() {
               MARKET CAP
             </span>
             <span style={{ color: '#ffffff', fontSize: '48px', fontWeight: 'bold' }}>
-              $84,200 CRED
+              $84,200 THESIS
             </span>
           </div>
 
