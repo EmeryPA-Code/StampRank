@@ -6,20 +6,20 @@ import {
   clusterApiUrl,
 } from '@solana/web3.js';
 
-const TREASURY_ADDRESS = new PublicKey('GsbwXfJraMomNxBcpR3DBDuFMEJyMSHjgcrLDSbDXQFj');
+const TREASURY_ADDRESS = new PublicKey('So1endDq2YkqhipRh3WViPa8hdiSpxWy6z3Z6tMCpAo');
 
 export async function stakeOnChain(
   walletPublicKey: PublicKey,
-  projectSlug: string,
+  _projectSlug: string,
   amount: number,
-  type: 'long' | 'skeptic',
+  _type: 'long' | 'skeptic',
   signTransaction: (tx: Transaction) => Promise<Transaction>,
 ): Promise<string> {
   const connection = new Connection(clusterApiUrl('testnet'), 'confirmed');
   console.log('Connection endpoint:', connection.rpcEndpoint)
 
   try {
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('finalized');
 
     const transaction = new Transaction().add(
       SystemProgram.transfer({
@@ -29,14 +29,13 @@ export async function stakeOnChain(
       }),
     );
     transaction.recentBlockhash = blockhash;
+    transaction.lastValidBlockHeight = lastValidBlockHeight;
     transaction.feePayer = walletPublicKey;
 
     console.log('Sending transaction...')
     const signed = await signTransaction(transaction);
-    const signature = await connection.sendRawTransaction(signed.serialize());
+    const signature = await connection.sendRawTransaction(signed.serialize(), { skipPreflight: true, preflightCommitment: 'processed' });
     console.log('Transaction sent:' + signature)
-
-    await connection.confirmTransaction({ signature, blockhash, lastValidBlockHeight }, 'confirmed');
 
     return signature;
   } catch (error) {
