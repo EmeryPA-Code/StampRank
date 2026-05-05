@@ -95,12 +95,22 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
 
     alert('Stake confirmed! Transaction: ' + signature)
 
+    const newMarketCap = (project.market_cap ?? 0) + stakeAmount
+    const newStakers = (project.stakers ?? 0) + 1
+
     supabase.from('stakes').insert({
       wallet: publicKey.toBase58(),
       project_slug: slug,
       amount: stakeAmount,
       type: position,
     })
+
+    supabase.from('projects').update({
+      market_cap: newMarketCap,
+      stakers: newStakers,
+    }).eq('slug', slug)
+
+    setProject({ ...project, market_cap: newMarketCap, stakers: newStakers })
   }
 
   const header = (
