@@ -72,7 +72,7 @@ Rankings are determined by staked capital, not votes. Every position is recorded
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/your-repo/stamprank.git
+git clone https://github.com/EmeryPA-Code/StampRank.git
 cd stamprank
 npm install
 ```
