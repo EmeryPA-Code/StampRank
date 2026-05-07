@@ -10,6 +10,7 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 )
 import { useWallet } from '@solana/wallet-adapter-react'
+import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
 
 type Project = {
@@ -225,6 +226,18 @@ export default function Home() {
       if (data) setProjects(data)
       setLoading(false)
     })
+
+    const channel: RealtimeChannel = supabase
+      .channel('projects-changes')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'projects' }, (payload) => {
+        setProjects(prev => {
+          const updated = prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p)
+          return updated.sort((a, b) => (b.market_cap ?? 0) - (a.market_cap ?? 0))
+        })
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [])
 
   useEffect(() => {
