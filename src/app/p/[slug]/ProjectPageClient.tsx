@@ -231,10 +231,16 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
       type: position,
     })
 
-    console.log('Updating slug:', slug, 'new market_cap:', newMarketCap)
+    const currentLongAmount = (project.long_pct / 100) * project.market_cap
+    const newLongPct = position === 'long'
+      ? Math.round((currentLongAmount + stakeAmount) / newMarketCap * 100)
+      : Math.round(currentLongAmount / newMarketCap * 100)
+
+    console.log('Updating slug:', slug, 'new market_cap:', newMarketCap, 'new long_pct:', newLongPct)
     const updateResponse = await supabase.from('projects').update({
       market_cap: newMarketCap,
       stakers: newStakers,
+      long_pct: newLongPct,
     }).eq('slug', slug)
     console.log('Supabase update response:', updateResponse)
 
@@ -242,7 +248,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
     const updateResult = await supabase.from('users').update({ thesis_balance: newBalance }).eq('wallet_address', publicKey.toBase58())
     console.log('Balance update response:', updateResult)
 
-    setProject({ ...project!, market_cap: newMarketCap, stakers: newStakers })
+    setProject({ ...project!, market_cap: newMarketCap, stakers: newStakers, long_pct: newLongPct })
     setThesisBalance(prev => (prev ?? 0) - stakeAmount)
   }
 
