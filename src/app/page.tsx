@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Zap, Activity } from 'lucide-react'
+import { TrendingUp, TrendingDown, Zap, Activity, User } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
@@ -114,7 +114,7 @@ function MarqueeColumn({ projects }: { projects: Project[] }) {
         display: 'flex',
         flexDirection: 'column',
         gap: '12px',
-        animation: 'scroll-up 20s linear infinite',
+        animation: 'scroll-up 40s linear infinite',
       }}>
         {doubled.map((p, i) => (
           <MarqueeCard key={`${p.id}-${i}`} project={p} />
@@ -132,7 +132,7 @@ function MarqueeRow({ projects }: { projects: Project[] }) {
         display: 'flex',
         flexDirection: 'row',
         gap: '12px',
-        animation: 'scroll-left 18s linear infinite',
+        animation: 'scroll-left 38s linear infinite',
         width: 'max-content',
       }}>
         {doubled.map((p, i) => (
@@ -219,13 +219,29 @@ export default function Home() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
   const [balance, setBalance] = useState<number | null>(null)
+  const [projectCount, setProjectCount] = useState(0)
+  const [totalStaked, setTotalStaked] = useState(0)
+  const [totalStakers, setTotalStakers] = useState(0)
   const { publicKey } = useWallet()
+
+  async function fetchStats() {
+    const [rowsRes, countRes] = await Promise.all([
+      supabase.from('projects').select('market_cap, stakers'),
+      supabase.from('projects').select('id', { count: 'exact', head: true }),
+    ])
+    if (rowsRes.data) {
+      setTotalStaked(rowsRes.data.reduce((sum, p) => sum + (p.market_cap ?? 0), 0))
+      setTotalStakers(rowsRes.data.reduce((sum, p) => sum + (p.stakers ?? 0), 0))
+    }
+    if (countRes.count !== null) setProjectCount(countRes.count)
+  }
 
   useEffect(() => {
     supabase.from('projects').select('*').order('rank').then(({ data }) => {
       if (data) setProjects(data)
       setLoading(false)
     })
+    fetchStats()
 
     const channel: RealtimeChannel = supabase
       .channel('projects-changes')
@@ -234,6 +250,7 @@ export default function Home() {
           const updated = prev.map(p => p.id === payload.new.id ? { ...p, ...payload.new } : p)
           return updated.sort((a, b) => (b.market_cap ?? 0) - (a.market_cap ?? 0))
         })
+        fetchStats()
       })
       .subscribe()
 
@@ -286,6 +303,13 @@ export default function Home() {
               style={{ color: 'var(--secondary)' }}>
               {balance.toLocaleString()} $THESIS
             </span>
+          )}
+          {publicKey && (
+            <Link href="/profile"
+              className="flex items-center justify-center w-8 h-8 rounded transition-opacity hover:opacity-70"
+              style={{ background: 'var(--border)', color: 'var(--muted)' }}>
+              <User size={14} />
+            </Link>
           )}
           <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
             <WalletMultiButton />
@@ -358,9 +382,9 @@ export default function Home() {
           {/* Stat cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
             {[
-              { label: 'Projects Listed', value: '8' },
-              { label: 'THESIS Staked', value: '$309,800' },
-              { label: 'Stakers', value: '4,590' },
+              { label: 'Projects Listed', value: projectCount.toString() },
+              { label: 'THESIS Staked', value: `$${totalStaked.toLocaleString()}` },
+              { label: 'Stakers', value: totalStakers.toLocaleString() },
             ].map(s => (
               <div key={s.label} className="px-6 py-4 rounded-lg border"
                 style={{ background: '#0d0d14', borderColor: 'var(--border)', minWidth: '160px' }}>
@@ -420,20 +444,30 @@ export default function Home() {
       </section>
 
       {/* Stats bar */}
-      <div className="border-b px-6 py-3 flex flex-wrap items-center gap-6"
-        style={{ borderColor: 'var(--border)' }}>
-        {[
-          { label: 'TOTAL STAKED', value: '$309,800', color: 'var(--text)' },
-          { label: 'PROJECTS', value: '8', color: 'var(--text)' },
-          { label: 'STAKERS', value: '4,590', color: 'var(--text)' },
-          { label: 'TRENDING', value: 'Supabase ↑31%', color: 'var(--secondary)' },
-        ].map(stat => (
-          <div key={stat.label} className="flex flex-col">
-            <span className="text-xs" style={{ color: 'var(--muted)' }}>{stat.label}</span>
-            <span className="mono font-bold text-sm" style={{ color: stat.color }}>{stat.value}</span>
+      {(() => {
+        const trending = projects.length > 0
+          ? projects.reduce((best, p) => (p.change_24h ?? 0) > (best.change_24h ?? 0) ? p : best, projects[0])
+          : null
+        const trendingLabel = trending
+          ? `${trending.name} ↑${trending.change_24h ?? 0}%`
+          : '—'
+        return (
+          <div className="border-b px-6 py-3 flex flex-wrap items-center gap-6"
+            style={{ borderColor: 'var(--border)' }}>
+            {[
+              { label: 'TOTAL STAKED', value: `$${totalStaked.toLocaleString()}`, color: 'var(--text)' },
+              { label: 'PROJECTS', value: projectCount.toString(), color: 'var(--text)' },
+              { label: 'STAKERS', value: totalStakers.toLocaleString(), color: 'var(--text)' },
+              { label: 'TRENDING', value: trendingLabel, color: 'var(--secondary)' },
+            ].map(stat => (
+              <div key={stat.label} className="flex flex-col">
+                <span className="text-xs" style={{ color: 'var(--muted)' }}>{stat.label}</span>
+                <span className="mono font-bold text-sm" style={{ color: stat.color }}>{stat.value}</span>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        )
+      })()}
 
       {/* Table */}
       <div className="flex-1 overflow-x-auto w-full">

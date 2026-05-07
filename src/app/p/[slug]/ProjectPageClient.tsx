@@ -7,7 +7,7 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 )
 import { useWallet } from '@solana/wallet-adapter-react'
-import { TrendingUp, TrendingDown, ArrowLeft, Users, Activity, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, Zap, Users, Activity, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { stakeOnChain } from '@/lib/solana'
 import { supabase } from '@/lib/supabase'
@@ -52,13 +52,97 @@ function MiniChart({ history, positive }: { history: number[], positive: boolean
   )
 }
 
+function MarqueeCard({ project }: { project: Project }) {
+  const isPositive = (project.change_24h ?? 0) > 0
+  return (
+    <div className="rounded-lg border p-3 flex flex-col gap-1.5 shrink-0"
+      style={{ background: 'var(--surface)', borderColor: 'var(--border)', width: '160px' }}>
+      <div className="flex items-center justify-between gap-1">
+        <span className="font-semibold text-xs truncate" style={{ color: 'var(--text)' }}>
+          {project.name}
+        </span>
+        {project.category && (
+          <span className="px-1.5 py-0.5 rounded shrink-0"
+            style={{ background: 'var(--border)', color: 'var(--muted)', fontSize: '9px' }}>
+            {project.category}
+          </span>
+        )}
+      </div>
+      <span className="mono text-sm font-bold" style={{ color: 'var(--secondary)' }}>
+        ${(project.market_cap ?? 0).toLocaleString()}
+      </span>
+      <div className="flex items-center justify-between">
+        <span className="mono text-xs" style={{ color: 'var(--long)' }}>
+          {project.long_pct ?? 0}% LONG
+        </span>
+        <span className="mono text-xs font-bold"
+          style={{ color: isPositive ? 'var(--long)' : 'var(--skeptic)' }}>
+          {isPositive ? '+' : ''}{project.change_24h ?? 0}%
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function MarqueeColumn({ projects }: { projects: Project[] }) {
+  const doubled = [...projects, ...projects]
+  return (
+    <div style={{ overflow: 'hidden', height: '100%' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        animation: 'scroll-up 40s linear infinite',
+      }}>
+        {doubled.map((p, i) => <MarqueeCard key={`${p.id}-${i}`} project={p} />)}
+      </div>
+    </div>
+  )
+}
+
+function MarqueeRow({ projects }: { projects: Project[] }) {
+  const doubled = [...projects, ...projects]
+  return (
+    <div style={{ overflow: 'hidden', width: '100%' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '12px',
+        animation: 'scroll-left 38s linear infinite',
+        width: 'max-content',
+      }}>
+        {doubled.map((p, i) => <MarqueeCard key={`${p.id}-${i}`} project={p} />)}
+      </div>
+    </div>
+  )
+}
+
+const TICKER_EVENTS = [
+  'anon_whale staked 500 $THESIS on Notion',
+  'marc_builder went SKEPTIC on Loom',
+  'founder_xyz staked 200 $THESIS on Supabase',
+  'cryptovc went LONG on Raycast',
+  'indie_maker staked 150 $THESIS on Linear',
+  'buildoor went SKEPTIC on Cal.com',
+  'solana_dev staked 800 $THESIS on Framer',
+]
+
 export default function ProjectPageClient({ slug }: { slug: string }) {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
+  const [marqueeProjects, setMarqueeProjects] = useState<Project[]>([])
   const [stakeAmount, setStakeAmount] = useState(100)
   const [position, setPosition] = useState<'long' | 'skeptic' | null>(null)
   const [thesisBalance, setThesisBalance] = useState<number | null>(null)
+  const [tickerIndex, setTickerIndex] = useState(0)
   const { publicKey, signTransaction, connected } = useWallet()
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTickerIndex(i => (i + 1) % TICKER_EVENTS.length)
+    }, 2500)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     supabase
@@ -70,6 +154,15 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
         setProject(data)
         setLoading(false)
       })
+  }, [slug])
+
+  useEffect(() => {
+    supabase
+      .from('projects')
+      .select('*')
+      .neq('slug', slug)
+      .order('rank')
+      .then(({ data }) => { if (data) setMarqueeProjects(data) })
   }, [slug])
 
   useEffect(() => {
@@ -149,20 +242,34 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
   const header = (
     <header className="border-b px-6 py-4 flex items-center justify-between"
       style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-      <div className="flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-70"
-          style={{ color: 'var(--muted)' }}>
-          <ArrowLeft size={16} />
-          <span className="text-sm">Leaderboard</span>
-        </Link>
-        <span style={{ color: 'var(--border)' }}>·</span>
-        <span className="font-bold" style={{ color: 'var(--primary)' }}>STAMPRANK</span>
-      </div>
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5">
+        <Link href="/">
+          <span className="text-lg font-bold" style={{ color: 'var(--primary)' }}>STAMPRANK</span>
+        </Link>
+        <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
+          style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
+          DEVNET
+        </span>
+      </div>
+      <div className="hidden md:flex items-center gap-2 text-xs">
+        <Zap size={12} style={{ color: 'var(--primary)' }} />
+        <span style={{ color: 'var(--text)' }}>{TICKER_EVENTS[tickerIndex]}</span>
+      </div>
+      <div className="flex items-center gap-4">
+        <Link href="/submit"
+          className="hidden md:flex text-sm font-bold transition-opacity hover:opacity-70"
+          style={{ color: 'var(--secondary)' }}>
+          Submit Project
+        </Link>
+        <div className="hidden md:flex items-center gap-1.5">
           <Activity size={12} style={{ color: 'var(--secondary)' }} />
-          <span className="mono text-xs hidden sm:inline" style={{ color: 'var(--muted)' }}>Solana · 400ms</span>
+          <span className="mono text-xs" style={{ color: 'var(--muted)' }}>Solana · 400ms</span>
         </div>
+        {publicKey && thesisBalance !== null && (
+          <span className="mono text-xs hidden md:inline" style={{ color: 'var(--secondary)' }}>
+            {thesisBalance.toLocaleString()} $THESIS
+          </span>
+        )}
         <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
           <WalletMultiButton />
         </div>
@@ -202,7 +309,32 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
 
       {header}
 
-      <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
+      {/* Mobile top marquee */}
+      {marqueeProjects.length > 0 && (
+        <div className="lg:hidden px-4 pt-4 overflow-hidden">
+          <MarqueeRow projects={marqueeProjects} />
+        </div>
+      )}
+
+      <div className="relative">
+        {/* Desktop left column */}
+        {marqueeProjects.length > 0 && (
+          <div className="hidden lg:block absolute left-4 top-0 bottom-0 w-44"
+            style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}>
+            <MarqueeColumn projects={marqueeProjects} />
+          </div>
+        )}
+
+        {/* Desktop right column */}
+        {marqueeProjects.length > 0 && (
+          <div className="hidden lg:block absolute right-4 top-0 bottom-0 w-44"
+            style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}>
+            <MarqueeColumn projects={marqueeProjects} />
+          </div>
+        )}
+
+        {/* Main content */}
+        <div className="relative z-10 max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
 
         {/* Project Header */}
         <div className="flex items-start justify-between">
@@ -362,7 +494,8 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
             </p>
           </div>
         </div>
-      </div>
+        </div>{/* end main content */}
+      </div>{/* end relative wrapper */}
     </div>
   )
 }
