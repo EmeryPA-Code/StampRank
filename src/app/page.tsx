@@ -1,18 +1,12 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Zap, Activity, User } from 'lucide-react'
+import { TrendingUp, TrendingDown, Zap } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import dynamic from 'next/dynamic'
-const WalletMultiButton = dynamic(
-  () => import('@solana/wallet-adapter-react-ui').then(m => m.WalletMultiButton),
-  { ssr: false }
-)
-import { useWallet } from '@solana/wallet-adapter-react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase'
+import Layout from '@/components/Layout'
 
 type Project = {
   id: number
@@ -55,13 +49,6 @@ function Ticker() {
       <span style={{ color: 'var(--text)' }}>{TICKER_EVENTS[index]}</span>
     </div>
   )
-}
-
-function ClientTime() {
-  const [time, setTime] = useState<string | null>(null)
-  useEffect(() => { setTime(new Date().toUTCString()) }, [])
-  if (!time) return null
-  return <>{time}</>
 }
 
 function MarketCapBar({ longPct }: { longPct: number }) {
@@ -219,11 +206,9 @@ function ProjectRow({ project }: { project: Project }) {
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
-  const [balance, setBalance] = useState<number | null>(null)
   const [projectCount, setProjectCount] = useState(0)
   const [totalStaked, setTotalStaked] = useState(0)
   const [totalStakers, setTotalStakers] = useState(0)
-  const { publicKey } = useWallet()
 
   async function fetchStats() {
     const [rowsRes, countRes] = await Promise.all([
@@ -258,63 +243,8 @@ export default function Home() {
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  useEffect(() => {
-    if (!publicKey) { setBalance(null); return }
-    console.log('Looking up wallet:', publicKey.toBase58())
-    supabase
-      .from('users')
-      .select('thesis_balance')
-      .eq('wallet_address', publicKey.toBase58())
-      .single()
-      .then(({ data, error }) => {
-        console.log('Select result:', data, error)
-        if (!error && data) setBalance(data.thesis_balance)
-      })
-  }, [publicKey])
-
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
-
-      {/* Header */}
-      <header className="border-b px-6 py-4 flex items-center justify-between"
-        style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-        <div className="flex items-center gap-3">
-          <Image src="/logo.png" width={160} height={40} alt="StampRank" style={{ objectFit: 'contain' }} />
-          <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
-            style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
-            DEVNET
-          </span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/submit"
-            className="hidden md:flex text-sm font-bold transition-opacity hover:opacity-70"
-            style={{ color: 'var(--secondary)' }}>
-            Submit Project
-          </Link>
-          <div className="hidden md:flex items-center gap-1.5">
-            <Activity size={12} style={{ color: 'var(--secondary)' }} />
-            <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
-              Solana · 400ms
-            </span>
-          </div>
-          {publicKey && balance !== null && (
-            <span className="mono text-xs hidden md:inline"
-              style={{ color: 'var(--secondary)' }}>
-              {balance.toLocaleString()} $THESIS
-            </span>
-          )}
-          {publicKey && (
-            <Link href="/profile"
-              className="flex items-center justify-center w-8 h-8 rounded transition-opacity hover:opacity-70"
-              style={{ background: 'var(--border)', color: 'var(--muted)' }}>
-              <User size={14} />
-            </Link>
-          )}
-          <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
-            <WalletMultiButton />
-          </div>
-        </div>
-      </header>
+    <Layout>
 
       {/* Ticker */}
       <Ticker />
@@ -497,16 +427,6 @@ export default function Home() {
         </table>
       </div>
 
-      {/* Footer */}
-      <footer className="border-t px-6 py-3 flex items-center justify-between"
-        style={{ borderColor: 'var(--border)' }}>
-        <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
-          STAMPRANK · Powered by Solana · $THESIS token
-        </span>
-        <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
-          <ClientTime />
-        </span>
-      </footer>
-    </div>
+    </Layout>
   )
 }

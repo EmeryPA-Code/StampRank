@@ -7,19 +7,10 @@ const WalletMultiButton = dynamic(
   { ssr: false }
 )
 import { useWallet } from '@solana/wallet-adapter-react'
-import { TrendingUp, TrendingDown, Activity, Zap, User } from 'lucide-react'
+import { TrendingUp, TrendingDown, User } from 'lucide-react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-
-const TICKER_EVENTS = [
-  'anon_whale staked 500 $THESIS on Notion',
-  'marc_builder went SKEPTIC on Loom',
-  'founder_xyz staked 200 $THESIS on Supabase',
-  'cryptovc went LONG on Raycast',
-  'indie_maker staked 150 $THESIS on Linear',
-  'buildoor went SKEPTIC on Cal.com',
-  'solana_dev staked 800 $THESIS on Framer',
-]
+import Layout from '@/components/Layout'
 
 type Stake = {
   id: number
@@ -28,9 +19,8 @@ type Stake = {
   amount: number
   type: 'long' | 'skeptic'
   created_at: string
+  projects: { name: string; slug: string } | null
 }
-
-type StakeWithName = Stake & { project_name: string }
 
 function truncate(addr: string) {
   return `${addr.slice(0, 4)}...${addr.slice(-4)}`
@@ -38,17 +28,9 @@ function truncate(addr: string) {
 
 export default function ProfilePage() {
   const { publicKey } = useWallet()
-  const [stakes, setStakes] = useState<StakeWithName[]>([])
+  const [stakes, setStakes] = useState<Stake[]>([])
   const [balance, setBalance] = useState<number | null>(null)
   const [loading, setLoading] = useState(false)
-  const [tickerIndex, setTickerIndex] = useState(0)
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerIndex(i => (i + 1) % TICKER_EVENTS.length)
-    }, 2500)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     if (!publicKey) { setStakes([]); setBalance(null); return }
@@ -56,68 +38,18 @@ export default function ProfilePage() {
     setLoading(true)
 
     Promise.all([
-      supabase.from('stakes').select('*').eq('wallet', wallet).order('created_at', { ascending: false }),
+      supabase.from('stakes').select('*, projects(name, slug)').eq('wallet', wallet).order('created_at', { ascending: false }),
       supabase.from('users').select('thesis_balance').eq('wallet_address', wallet).single(),
-      supabase.from('projects').select('slug, name'),
-    ]).then(([stakesRes, userRes, projectsRes]) => {
+    ]).then(([stakesRes, userRes]) => {
       if (!userRes.error && userRes.data) setBalance(userRes.data.thesis_balance)
-
-      const projectMap: Record<string, string> = {}
-      for (const p of projectsRes.data ?? []) {
-        projectMap[p.slug] = p.name
-      }
-
-      const enriched: StakeWithName[] = (stakesRes.data ?? []).map(s => ({
-        ...s,
-        project_name: projectMap[s.project_slug] ?? s.project_slug,
-      }))
-      setStakes(enriched)
+      setStakes((stakesRes.data ?? []) as Stake[])
       setLoading(false)
     })
   }, [publicKey])
 
-  const header = (
-    <header className="border-b px-6 py-4 flex items-center justify-between"
-      style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-      <div className="flex items-center gap-3">
-        <Link href="/">
-          <span className="text-lg font-bold" style={{ color: 'var(--primary)' }}>STAMPRANK</span>
-        </Link>
-        <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
-          style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
-          DEVNET
-        </span>
-      </div>
-      <div className="hidden md:flex items-center gap-2 text-xs">
-        <Zap size={12} style={{ color: 'var(--primary)' }} />
-        <span style={{ color: 'var(--text)' }}>{TICKER_EVENTS[tickerIndex]}</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <Link href="/submit"
-          className="hidden md:flex text-sm font-bold transition-opacity hover:opacity-70"
-          style={{ color: 'var(--secondary)' }}>
-          Submit Project
-        </Link>
-        <div className="hidden md:flex items-center gap-1.5">
-          <Activity size={12} style={{ color: 'var(--secondary)' }} />
-          <span className="mono text-xs" style={{ color: 'var(--muted)' }}>Solana · 400ms</span>
-        </div>
-        {publicKey && balance !== null && (
-          <span className="mono text-xs hidden md:inline" style={{ color: 'var(--secondary)' }}>
-            {balance.toLocaleString()} $THESIS
-          </span>
-        )}
-        <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
-          <WalletMultiButton />
-        </div>
-      </div>
-    </header>
-  )
-
   if (!publicKey) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
-        {header}
+      <Layout>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center flex flex-col items-center gap-4">
             <User size={40} style={{ color: 'var(--muted)' }} />
@@ -129,16 +61,14 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
-      </div>
+      </Layout>
     )
   }
 
   const addr = publicKey.toBase58()
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
-      {header}
-
+    <Layout>
       <div className="max-w-3xl mx-auto w-full px-6 py-8 flex flex-col gap-6">
 
         {/* Identity card */}
@@ -209,7 +139,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold text-sm" style={{ color: 'var(--text)' }}>
-                        {stake.project_name}
+                        {stake.projects?.name ?? stake.project_slug}
                       </span>
                       <span className="text-xs" style={{ color: 'var(--muted)' }}>{date}</span>
                     </div>
@@ -232,6 +162,6 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }

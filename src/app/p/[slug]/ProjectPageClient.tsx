@@ -2,15 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import dynamic from 'next/dynamic'
-const WalletMultiButton = dynamic(
-  () => import('@solana/wallet-adapter-react-ui').then(m => m.WalletMultiButton),
-  { ssr: false }
-)
 import { useWallet } from '@solana/wallet-adapter-react'
-import { TrendingUp, TrendingDown, Zap, Users, Activity, ExternalLink } from 'lucide-react'
+import { TrendingUp, TrendingDown, Users, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
-import Image from 'next/image'
+import Layout from '@/components/Layout'
 import { stakeOnChain } from '@/lib/solana'
 import { supabase } from '@/lib/supabase'
 
@@ -119,16 +114,6 @@ function MarqueeRow({ projects }: { projects: Project[] }) {
   )
 }
 
-const TICKER_EVENTS = [
-  'anon_whale staked 500 $THESIS on Notion',
-  'marc_builder went SKEPTIC on Loom',
-  'founder_xyz staked 200 $THESIS on Supabase',
-  'cryptovc went LONG on Raycast',
-  'indie_maker staked 150 $THESIS on Linear',
-  'buildoor went SKEPTIC on Cal.com',
-  'solana_dev staked 800 $THESIS on Framer',
-]
-
 export default function ProjectPageClient({ slug }: { slug: string }) {
   const [project, setProject] = useState<Project | null>(null)
   const [loading, setLoading] = useState(true)
@@ -136,7 +121,6 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
   const [stakeAmount, setStakeAmount] = useState(100)
   const [position, setPosition] = useState<'long' | 'skeptic' | null>(null)
   const [thesisBalance, setThesisBalance] = useState<number | null>(null)
-  const [tickerIndex, setTickerIndex] = useState(0)
   const { publicKey, signTransaction, connected } = useWallet()
   const searchParams = useSearchParams()
 
@@ -144,13 +128,6 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
     const action = searchParams.get('action')
     if (action === 'long' || action === 'skeptic') setPosition(action)
   }, [searchParams])
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTickerIndex(i => (i + 1) % TICKER_EVENTS.length)
-    }, 2500)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     supabase
@@ -253,59 +230,19 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
     setThesisBalance(prev => (prev ?? 0) - stakeAmount)
   }
 
-  const header = (
-    <header className="border-b px-6 py-4 flex items-center justify-between"
-      style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-      <div className="flex items-center gap-3">
-        <Link href="/">
-          <Image src="/logo.png" width={160} height={40} alt="StampRank" style={{ objectFit: 'contain' }} />
-        </Link>
-        <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
-          style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
-          DEVNET
-        </span>
-      </div>
-      <div className="hidden md:flex items-center gap-2 text-xs">
-        <Zap size={12} style={{ color: 'var(--primary)' }} />
-        <span style={{ color: 'var(--text)' }}>{TICKER_EVENTS[tickerIndex]}</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <Link href="/submit"
-          className="hidden md:flex text-sm font-bold transition-opacity hover:opacity-70"
-          style={{ color: 'var(--secondary)' }}>
-          Submit Project
-        </Link>
-        <div className="hidden md:flex items-center gap-1.5">
-          <Activity size={12} style={{ color: 'var(--secondary)' }} />
-          <span className="mono text-xs" style={{ color: 'var(--muted)' }}>Solana · 400ms</span>
-        </div>
-        {publicKey && thesisBalance !== null && (
-          <span className="mono text-xs hidden md:inline" style={{ color: 'var(--secondary)' }}>
-            {thesisBalance.toLocaleString()} $THESIS
-          </span>
-        )}
-        <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
-          <WalletMultiButton />
-        </div>
-      </div>
-    </header>
-  )
-
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
-        {header}
+      <Layout>
         <div className="flex-1 flex items-center justify-center">
           <span className="mono text-xs" style={{ color: 'var(--muted)' }}>Loading…</span>
         </div>
-      </div>
+      </Layout>
     )
   }
 
   if (!project) {
     return (
-      <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
-        {header}
+      <Layout>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <p style={{ color: 'var(--muted)' }}>Project not found</p>
@@ -314,14 +251,12 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
             </Link>
           </div>
         </div>
-      </div>
+      </Layout>
     )
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--background)' }}>
-
-      {header}
+    <Layout>
 
       {/* Mobile top marquee */}
       {marqueeProjects.length > 0 && (
@@ -510,6 +445,6 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
         </div>
         </div>{/* end main content */}
       </div>{/* end relative wrapper */}
-    </div>
+    </Layout>
   )
 }

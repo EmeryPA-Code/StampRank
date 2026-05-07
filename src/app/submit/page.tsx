@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
+import Layout from '@/components/Layout'
 
 const CATEGORIES = ['Productivity', 'Developer Tools', 'Design', 'Marketing', 'AI', 'SaaS', 'Other']
 
@@ -73,22 +73,7 @@ export default function SubmitPage() {
   } as React.CSSProperties
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
-
-      {/* Header */}
-      <header className="border-b px-6 py-4 flex items-center justify-between"
-        style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-70"
-            style={{ color: 'var(--muted)' }}>
-            <ArrowLeft size={16} />
-            <span className="text-sm">Leaderboard</span>
-          </Link>
-          <span style={{ color: 'var(--border)' }}>·</span>
-          <span className="font-bold" style={{ color: 'var(--primary)' }}>STAMPRANK</span>
-        </div>
-      </header>
-
+    <Layout>
       <div className="flex-1 flex items-start justify-center px-6 py-12">
         <div className="w-full max-w-lg">
 
@@ -196,6 +181,6 @@ export default function SubmitPage() {
           )}
         </div>
       </div>
-    </div>
+    </Layout>
   )
 }
