@@ -9,6 +9,7 @@ const WalletMultiButton = dynamic(
   () => import('@solana/wallet-adapter-react-ui').then(m => m.WalletMultiButton),
   { ssr: false }
 )
+import { useWallet } from '@solana/wallet-adapter-react'
 import { supabase } from '@/lib/supabase'
 
 type Project = {
@@ -21,6 +22,7 @@ type Project = {
   rank: number
   change_24h: number
   stakers: number
+  category?: string
 }
 
 const TICKER_EVENTS = [
@@ -67,6 +69,75 @@ function MarketCapBar({ longPct }: { longPct: number }) {
         style={{ width: `${longPct}%`, background: 'var(--long)' }} />
       <div className="rounded-full transition-all duration-500"
         style={{ width: `${100 - longPct}%`, background: 'var(--skeptic)' }} />
+    </div>
+  )
+}
+
+function MarqueeCard({ project }: { project: Project }) {
+  const isPositive = (project.change_24h ?? 0) > 0
+  return (
+    <div className="rounded-lg border p-3 flex flex-col gap-1.5 shrink-0"
+      style={{ background: 'var(--surface)', borderColor: 'var(--border)', width: '160px' }}>
+      <div className="flex items-center justify-between gap-1">
+        <span className="font-semibold text-xs truncate" style={{ color: 'var(--text)' }}>
+          {project.name}
+        </span>
+        {project.category && (
+          <span className="text-xs px-1.5 py-0.5 rounded shrink-0"
+            style={{ background: 'var(--border)', color: 'var(--muted)', fontSize: '9px' }}>
+            {project.category}
+          </span>
+        )}
+      </div>
+      <span className="mono text-sm font-bold" style={{ color: 'var(--secondary)' }}>
+        ${(project.market_cap ?? 0).toLocaleString()}
+      </span>
+      <div className="flex items-center justify-between">
+        <span className="mono text-xs" style={{ color: 'var(--long)' }}>
+          {project.long_pct ?? 0}% LONG
+        </span>
+        <span className="mono text-xs font-bold"
+          style={{ color: isPositive ? 'var(--long)' : 'var(--skeptic)' }}>
+          {isPositive ? '+' : ''}{project.change_24h ?? 0}%
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function MarqueeColumn({ projects }: { projects: Project[] }) {
+  const doubled = [...projects, ...projects]
+  return (
+    <div style={{ overflow: 'hidden', height: '100%' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '12px',
+        animation: 'scroll-up 20s linear infinite',
+      }}>
+        {doubled.map((p, i) => (
+          <MarqueeCard key={`${p.id}-${i}`} project={p} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function MarqueeRow({ projects }: { projects: Project[] }) {
+  const doubled = [...projects, ...projects]
+  return (
+    <div style={{ overflow: 'hidden', width: '100%' }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        gap: '12px',
+        animation: 'scroll-left 18s linear infinite',
+        width: 'max-content',
+      }}>
+        {doubled.map((p, i) => (
+          <MarqueeCard key={`${p.id}-${i}`} project={p} />
+        ))}
+      </div>
     </div>
   )
 }
@@ -146,6 +217,8 @@ function ProjectRow({ project }: { project: Project }) {
 export default function Home() {
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(true)
+  const [balance, setBalance] = useState<number | null>(null)
+  const { publicKey } = useWallet()
 
   useEffect(() => {
     supabase.from('projects').select('*').order('rank').then(({ data }) => {
@@ -153,6 +226,20 @@ export default function Home() {
       setLoading(false)
     })
   }, [])
+
+  useEffect(() => {
+    if (!publicKey) { setBalance(null); return }
+    console.log('Looking up wallet:', publicKey.toBase58())
+    supabase
+      .from('users')
+      .select('thesis_balance')
+      .eq('wallet_address', publicKey.toBase58())
+      .single()
+      .then(({ data, error }) => {
+        console.log('Select result:', data, error)
+        if (!error && data) setBalance(data.thesis_balance)
+      })
+  }, [publicKey])
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
@@ -164,23 +251,29 @@ export default function Home() {
           <span className="text-lg font-bold" style={{ color: 'var(--primary)' }}>
             STAMPRANK
           </span>
-          <span className="mono text-xs px-2 py-0.5 rounded"
+          <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
             style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
             DEVNET
           </span>
         </div>
         <div className="flex items-center gap-4">
           <Link href="/submit"
-            className="text-sm font-bold transition-opacity hover:opacity-70"
+            className="hidden md:flex text-sm font-bold transition-opacity hover:opacity-70"
             style={{ color: 'var(--secondary)' }}>
             Submit Project
           </Link>
-          <div className="flex items-center gap-1.5">
+          <div className="hidden md:flex items-center gap-1.5">
             <Activity size={12} style={{ color: 'var(--secondary)' }} />
             <span className="mono text-xs" style={{ color: 'var(--muted)' }}>
               Solana · 400ms
             </span>
           </div>
+          {publicKey && balance !== null && (
+            <span className="mono text-xs hidden md:inline"
+              style={{ color: 'var(--secondary)' }}>
+              {balance.toLocaleString()} $THESIS
+            </span>
+          )}
           <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
             <WalletMultiButton />
           </div>
@@ -191,57 +284,83 @@ export default function Home() {
       <Ticker />
 
       {/* Hero */}
-      <section className="flex flex-col items-center text-center px-6 py-16 border-b"
+      <section className="relative overflow-hidden border-b"
         style={{
           background: 'linear-gradient(180deg, #0A0A0F 0%, #111118 100%)',
           borderColor: 'var(--border)',
         }}>
 
-        {/* Badge */}
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-6 mono"
-          style={{ background: '#1a0f2e', color: 'var(--primary)', border: '1px solid #3d1f6e' }}>
-          ⚡ Built on Solana
+        {/* Mobile top marquee row */}
+        <div className="lg:hidden pt-4 px-4">
+          <MarqueeRow projects={projects} />
         </div>
 
-        {/* Headline */}
-        <h1 className="font-bold mb-4 leading-tight"
-          style={{ color: '#ffffff', fontSize: '64px', lineHeight: 1.1, maxWidth: '800px' }}>
-          The Market Decides<br />Who&apos;s Real
-        </h1>
-
-        {/* Subheadline */}
-        <p className="text-base mb-8 max-w-xl leading-relaxed"
-          style={{ color: 'var(--muted)' }}>
-          Stake $THESIS to Long or Skeptic founder projects. Rankings determined by on-chain capital, not votes.
-        </p>
-
-        {/* CTAs */}
-        <div className="flex items-center gap-3 mb-12">
-          <Link href="/submit"
-            className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
-            style={{ background: 'var(--primary)', color: '#fff' }}>
-            Submit Your Project
-          </Link>
-          <a href="#how-it-works"
-            className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
-            style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'transparent' }}>
-            How it Works
-          </a>
+        {/* Desktop left column */}
+        <div className="hidden lg:block absolute left-4 top-0 bottom-0 w-44"
+          style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}>
+          <MarqueeColumn projects={projects} />
         </div>
 
-        {/* Stat cards */}
-        <div className="flex items-center gap-4">
-          {[
-            { label: 'Projects Listed', value: '8' },
-            { label: 'THESIS Staked', value: '$309,800' },
-            { label: 'Stakers', value: '4,590' },
-          ].map(s => (
-            <div key={s.label} className="px-6 py-4 rounded-lg border"
-              style={{ background: '#0d0d14', borderColor: 'var(--border)', minWidth: '160px' }}>
-              <p className="mono font-bold text-2xl mb-1" style={{ color: 'var(--secondary)' }}>{s.value}</p>
-              <p className="text-xs" style={{ color: 'var(--muted)' }}>{s.label}</p>
-            </div>
-          ))}
+        {/* Desktop right column */}
+        <div className="hidden lg:block absolute right-4 top-0 bottom-0 w-44"
+          style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)', WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}>
+          <MarqueeColumn projects={projects} />
+        </div>
+
+        {/* Center content */}
+        <div className="relative z-10 flex flex-col items-center text-center px-6 py-16">
+
+          {/* Badge */}
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-6 mono"
+            style={{ background: '#1a0f2e', color: 'var(--primary)', border: '1px solid #3d1f6e' }}>
+            ⚡ Built on Solana
+          </div>
+
+          {/* Headline */}
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 leading-tight"
+            style={{ color: '#ffffff', lineHeight: 1.1, maxWidth: '800px' }}>
+            The Market Decides<br />Who&apos;s Real
+          </h1>
+
+          {/* Subheadline */}
+          <p className="text-base mb-8 max-w-xl leading-relaxed"
+            style={{ color: 'var(--muted)' }}>
+            Stake $THESIS to Long or Skeptic founder projects. Rankings determined by on-chain capital, not votes.
+          </p>
+
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row items-center gap-3 mb-12">
+            <Link href="/submit"
+              className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
+              style={{ background: 'var(--primary)', color: '#fff' }}>
+              Submit Your Project
+            </Link>
+            <a href="#how-it-works"
+              className="px-6 py-3 rounded font-bold text-sm transition-opacity hover:opacity-80"
+              style={{ border: '1px solid var(--border)', color: 'var(--muted)', background: 'transparent' }}>
+              How it Works
+            </a>
+          </div>
+
+          {/* Stat cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-2xl">
+            {[
+              { label: 'Projects Listed', value: '8' },
+              { label: 'THESIS Staked', value: '$309,800' },
+              { label: 'Stakers', value: '4,590' },
+            ].map(s => (
+              <div key={s.label} className="px-6 py-4 rounded-lg border"
+                style={{ background: '#0d0d14', borderColor: 'var(--border)', minWidth: '160px' }}>
+                <p className="mono font-bold text-2xl mb-1" style={{ color: 'var(--secondary)' }}>{s.value}</p>
+                <p className="text-xs" style={{ color: 'var(--muted)' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Mobile bottom marquee row */}
+        <div className="lg:hidden pb-4 px-4">
+          <MarqueeRow projects={projects} />
         </div>
       </section>
 
@@ -288,7 +407,7 @@ export default function Home() {
       </section>
 
       {/* Stats bar */}
-      <div className="border-b px-6 py-3 flex items-center gap-8"
+      <div className="border-b px-6 py-3 flex flex-wrap items-center gap-6"
         style={{ borderColor: 'var(--border)' }}>
         {[
           { label: 'TOTAL STAKED', value: '$309,800', color: 'var(--text)' },
@@ -304,7 +423,7 @@ export default function Home() {
       </div>
 
       {/* Table */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-x-auto w-full">
         <table className="w-full">
           <thead>
             <tr className="border-b" style={{ borderColor: 'var(--border)' }}>

@@ -44,3 +44,13 @@ body {
   font-family: var(--font-geist-mono);
   font-variant-numeric: tabular-nums;
 }
+
+@keyframes scroll-up {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-50%); }
+}
+
+@keyframes scroll-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}

@@ -57,6 +57,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
   const [loading, setLoading] = useState(true)
   const [stakeAmount, setStakeAmount] = useState(100)
   const [position, setPosition] = useState<'long' | 'skeptic' | null>(null)
+  const [thesisBalance, setThesisBalance] = useState<number | null>(null)
   const { publicKey, signTransaction, connected } = useWallet()
 
   useEffect(() => {
@@ -70,6 +71,29 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
         setLoading(false)
       })
   }, [slug])
+
+  useEffect(() => {
+    if (!publicKey) return
+    const wallet = publicKey.toBase58()
+    console.log('Looking up wallet:', wallet)
+    supabase
+      .from('users')
+      .select('thesis_balance')
+      .eq('wallet_address', wallet)
+      .single()
+      .then(({ data, error }) => {
+        console.log('Select result:', data, error)
+        if (!error && data) {
+          setThesisBalance(data.thesis_balance)
+        } else {
+          console.log('Inserting new user')
+          supabase
+            .from('users')
+            .insert({ wallet_address: wallet, thesis_balance: 1000 })
+            .then(() => setThesisBalance(1000))
+        }
+      })
+  }, [publicKey])
 
   const isPositive = (project?.change_24h ?? 0) > 0
   const history = project
@@ -98,6 +122,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
 
     const newMarketCap = (project?.market_cap ?? 0) + stakeAmount
     const newStakers = (project?.stakers ?? 0) + 1
+    const newBalance = (thesisBalance ?? 0) - stakeAmount
 
     supabase.from('stakes').insert({
       wallet: publicKey.toBase58(),
@@ -113,7 +138,12 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
     }).eq('slug', slug)
     console.log('Supabase update response:', updateResponse)
 
+    console.log('Updating balance for wallet:', publicKey.toBase58(), 'new balance:', newBalance)
+    const updateResult = await supabase.from('users').update({ thesis_balance: newBalance }).eq('wallet_address', publicKey.toBase58())
+    console.log('Balance update response:', updateResult)
+
     setProject({ ...project!, market_cap: newMarketCap, stakers: newStakers })
+    setThesisBalance(prev => (prev ?? 0) - stakeAmount)
   }
 
   const header = (
@@ -131,7 +161,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-1.5">
           <Activity size={12} style={{ color: 'var(--secondary)' }} />
-          <span className="mono text-xs" style={{ color: 'var(--muted)' }}>Solana · 400ms</span>
+          <span className="mono text-xs hidden sm:inline" style={{ color: 'var(--muted)' }}>Solana · 400ms</span>
         </div>
         <div className="wallet-adapter-button-wrapper" style={{ ['--wallet-adapter-button-background' as string]: '#9945FF' }}>
           <WalletMultiButton />
@@ -188,12 +218,16 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
                 ● LIVE
               </span>
             </div>
-            <p style={{ color: 'var(--muted)' }}>{project.description}</p>
-            <a href={`https://${project.url}`} target="_blank"
-              className="flex items-center gap-1 text-xs mt-1 hover:opacity-70 transition-opacity"
-              style={{ color: 'var(--primary)' }}>
-              {project.url} <ExternalLink size={10} />
-            </a>
+            {project.description && (
+              <p style={{ color: 'var(--muted)', fontSize: '16px' }}>{project.description}</p>
+            )}
+            {project.url && (
+              <a href={`https://${project.url}`} target="_blank"
+                className="flex items-center gap-1 text-xs mt-1 hover:opacity-70 transition-opacity"
+                style={{ color: 'var(--primary)' }}>
+                {project.url} <ExternalLink size={10} />
+              </a>
+            )}
           </div>
           <div className="mono text-xs px-3 py-1.5 rounded font-bold"
             style={{ background: 'var(--border)', color: 'var(--muted)' }}>
@@ -202,7 +236,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'MARKET CAP', value: `$${(project.market_cap ?? 0).toLocaleString()}`, color: 'var(--text)' },
             { label: '24H CHANGE', value: `${isPositive ? '+' : ''}${project.change_24h ?? 0}%`, color: isPositive ? 'var(--long)' : 'var(--skeptic)' },
@@ -217,7 +251,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
           ))}
         </div>
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
           {/* Chart + Sentiment */}
           <div className="col-span-2 rounded-lg border p-6 flex flex-col gap-4"
@@ -324,7 +358,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
             )}
 
             <p className="text-xs text-center" style={{ color: 'var(--muted)' }}>
-              Balance: 1,000 $THESIS available
+              Balance: {thesisBalance !== null ? thesisBalance.toLocaleString() : '—'} $THESIS available
             </p>
           </div>
         </div>
