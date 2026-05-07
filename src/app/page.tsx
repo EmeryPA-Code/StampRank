@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { TrendingUp, TrendingDown, Zap, Activity, User } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 const WalletMultiButton = dynamic(
@@ -278,9 +279,7 @@ export default function Home() {
       <header className="border-b px-6 py-4 flex items-center justify-between"
         style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
         <div className="flex items-center gap-3">
-          <span className="text-lg font-bold" style={{ color: 'var(--primary)' }}>
-            STAMPRANK
-          </span>
+          <Image src="/logo.png" width={160} height={40} alt="StampRank" style={{ objectFit: 'contain' }} />
           <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
             style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
             DEVNET

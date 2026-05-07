@@ -10,6 +10,7 @@ const WalletMultiButton = dynamic(
 import { useWallet } from '@solana/wallet-adapter-react'
 import { TrendingUp, TrendingDown, Zap, Users, Activity, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { stakeOnChain } from '@/lib/solana'
 import { supabase } from '@/lib/supabase'
 
@@ -257,7 +258,7 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
       style={{ borderColor: 'var(--border)', background: 'var(--surface)' }}>
       <div className="flex items-center gap-3">
         <Link href="/">
-          <span className="text-lg font-bold" style={{ color: 'var(--primary)' }}>STAMPRANK</span>
+          <Image src="/logo.png" width={160} height={40} alt="StampRank" style={{ objectFit: 'contain' }} />
         </Link>
         <span className="mono text-xs px-2 py-0.5 rounded hidden sm:inline"
           style={{ background: 'var(--border)', color: 'var(--secondary)' }}>
