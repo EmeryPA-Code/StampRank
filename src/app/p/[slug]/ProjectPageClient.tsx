@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 const WalletMultiButton = dynamic(
   () => import('@solana/wallet-adapter-react-ui').then(m => m.WalletMultiButton),
@@ -136,6 +137,12 @@ export default function ProjectPageClient({ slug }: { slug: string }) {
   const [thesisBalance, setThesisBalance] = useState<number | null>(null)
   const [tickerIndex, setTickerIndex] = useState(0)
   const { publicKey, signTransaction, connected } = useWallet()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const action = searchParams.get('action')
+    if (action === 'long' || action === 'skeptic') setPosition(action)
+  }, [searchParams])
 
   useEffect(() => {
     const interval = setInterval(() => {

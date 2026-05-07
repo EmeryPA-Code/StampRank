@@ -197,18 +197,18 @@ function ProjectRow({ project }: { project: Project }) {
       </td>
       <td className="px-6 py-4">
         <div className="flex gap-2">
-          <button
-            onClick={e => { e.stopPropagation() }}
+          <Link href={`/p/${project.slug}?action=long`}
+            onClick={e => e.stopPropagation()}
             className="px-3 py-1 rounded text-xs font-bold transition-opacity hover:opacity-80"
             style={{ background: 'var(--long)', color: '#000' }}>
             LONG
-          </button>
-          <button
-            onClick={e => { e.stopPropagation() }}
+          </Link>
+          <Link href={`/p/${project.slug}?action=skeptic`}
+            onClick={e => e.stopPropagation()}
             className="px-3 py-1 rounded text-xs font-bold transition-opacity hover:opacity-80"
             style={{ background: 'var(--skeptic)', color: '#fff' }}>
             SKEPTIC
-          </button>
+          </Link>
         </div>
       </td>
     </tr>
